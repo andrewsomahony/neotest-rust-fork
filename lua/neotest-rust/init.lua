@@ -12,11 +12,6 @@ local xml = require("neotest.lib.xml")
 
 local adapter = { name = "neotest-rust" }
 
--- These are the commands passed to codelldb when it initializes.  We use it mostly
--- to load the Rust visualizations, so we can see our variables in a formatted way
--- in the debugger
-local dapInitCommands = {}
-
 local cargo_metadata = setmetatable({}, {
     __call = function(self, cwd)
         local metadata = self[cwd]
@@ -36,10 +31,6 @@ local cargo_metadata = setmetatable({}, {
         end
     end,
 })
-
-function adapter.addCodeLLDBInitCommand(init_command)
-  table.insert(dapInitCommands, init_command)
-end
 
 ---Find the project root directory given a current directory to work from.
 ---Should no root be found, the adapter can still be used in a non-project context if a test file matches.
@@ -336,9 +327,9 @@ function adapter.build_spec(args)
             stopOnEntry = false,
             args = dap_args,
             program = dap.get_test_binary(cwd, position.path),
-            initCommands = dapInitCommands
---            initCommands = {"command script import '/Users/andrew/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/etc/lldb_lookup.py'",
---                            "command source '/Users/andrew/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/etc/lldb_commands'"}
+            -- We can get our initCommands from our get_args() method, which will return whatever
+            -- is passed in if we called our plugin like a function with the __call meta function
+            initCommands = get_args().initCommands
         }
 
         -- codelldb must be provided with a file for stdout in its launch parameters.
